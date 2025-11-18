@@ -4,46 +4,184 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body p-5">
-                <h2 class="text-center mb-4">
-                    <i class="bi bi-search text-primary"></i>
-                    Consultar Ficha del Proveedor
-                </h2>
-                <p class="text-center text-muted mb-4">
-                    Ingrese el número de RUC para consultar la información del proveedor
-                </p>
+    <div class="col-md-8">
+        <!-- Tabs for Single vs Batch -->
+        <ul class="nav nav-tabs mb-4" id="searchTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button" role="tab">
+                    <i class="bi bi-search"></i> Búsqueda Individual
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch" type="button" role="tab">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Carga Masiva
+                </button>
+            </li>
+        </ul>
 
-                <form method="post" id="searchForm">
-                    {% csrf_token %}
-                    
-                    <div class="mb-3">
-                        {{ form.ruc.label_tag }}
-                        {{ form.ruc }}
-                        {% if form.ruc.errors %}
-                            <div class="alert alert-danger mt-2">
-                                {% for error in form.ruc.errors %}
-                                    {{ error }}
-                                {% endfor %}
+        <div class="tab-content" id="searchTabsContent">
+            <!-- Single Search Tab -->
+            <div class="tab-pane fade show active" id="single" role="tabpanel">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <h2 class="text-center mb-4">
+                            <i class="bi bi-search text-primary"></i>
+                            Consultar Ficha del Proveedor
+                        </h2>
+                        <p class="text-center text-muted mb-4">
+                            Ingrese el número de RUC para consultar la información del proveedor
+                        </p>
+
+                        <form method="post" id="searchForm">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                {{ form.ruc.label_tag }}
+                                {{ form.ruc }}
+                                {% if form.ruc.errors %}
+                                    <div class="alert alert-danger mt-2">
+                                        {% for error in form.ruc.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">{{ form.ruc.help_text }}</div>
                             </div>
-                        {% endif %}
-                        <div class="form-text">{{ form.ruc.help_text }}</div>
-                    </div>
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-search"></i>
-                            Consultar
-                        </button>
-                    </div>
-                </form>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-search"></i>
+                                    Consultar
+                                </button>
+                            </div>
+                        </form>
 
-                <div class="spinner-wrapper">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Cargando...</span>
+                        <div class="spinner-wrapper">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Consultando información...</p>
+                        </div>
                     </div>
-                    <p class="mt-3 text-muted">Consultando información...</p>
+                </div>
+            </div>
+
+            <!-- Batch Upload Tab -->
+            <div class="tab-pane fade" id="batch" role="tabpanel">
+                <div class="card">
+                    <div class="card-body p-5">
+                        <h2 class="text-center mb-4">
+                            <i class="bi bi-file-earmark-spreadsheet text-success"></i>
+                            Carga Masiva de RUCs
+                        </h2>
+                        <p class="text-center text-muted mb-4">
+                            Cargue un archivo Excel con múltiples RUCs para procesamiento masivo
+                        </p>
+
+                        <div class="alert alert-info">
+                            <h6><i class="bi bi-info-circle"></i> Formato del archivo:</h6>
+                            <ul class="mb-0">
+                                <li>Archivo Excel (.xlsx o .xls)</li>
+                                <li>Primera columna debe contener los RUCs</li>
+                                <li>Primera fila puede ser encabezado (se omitirá)</li>
+                                <li>RUCs deben tener 11 dígitos</li>
+                            </ul>
+                        </div>
+
+                        <form id="batchUploadForm" enctype="multipart/form-data">
+                            <div class="mb-4">
+                                <label for="batchFile" class="form-label">Archivo Excel</label>
+                                <input type="file" class="form-control" id="batchFile" accept=".xlsx,.xls" required>
+                            </div>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg">
+                                    <i class="bi bi-upload"></i>
+                                    Cargar y Procesar
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Progress Section (hidden initially) -->
+                        <div id="batchProgress" class="mt-4" style="display: none;">
+                            <hr>
+                            <h5 class="text-center mb-3">Progreso del Procesamiento</h5>
+                            
+                            <div class="row text-center mb-3">
+                                <div class="col-md-3">
+                                    <div class="card bg-primary text-white">
+                                        <div class="card-body py-2">
+                                            <h6 class="mb-0">Total</h6>
+                                            <h3 id="totalRucs" class="mb-0">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-success text-white">
+                                        <div class="card-body py-2">
+                                            <h6 class="mb-0">Completados</h6>
+                                            <h3 id="completedRucs" class="mb-0">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-warning text-dark">
+                                        <div class="card-body py-2">
+                                            <h6 class="mb-0">Pendientes</h6>
+                                            <h3 id="pendingRucs" class="mb-0">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card bg-danger text-white">
+                                        <div class="card-body py-2">
+                                            <h6 class="mb-0">Fallidos</h6>
+                                            <h3 id="failedRucs" class="mb-0">0</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="progress mb-3" style="height: 30px;">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                     role="progressbar" style="width: 0%">0%</div>
+                            </div>
+
+                            <div id="statusMessage" class="alert alert-info text-center">
+                                <i class="bi bi-hourglass-split"></i>
+                                <span id="statusText">Iniciando procesamiento...</span>
+                            </div>
+
+                            <div id="downloadSection" style="display: none;" class="text-center">
+                                <button id="downloadBtn" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-download"></i>
+                                    Descargar Resultados
+                                </button>
+                            </div>
+
+                            <!-- Results Preview Table -->
+                            <div id="resultsPreview" style="display: none;" class="mt-4">
+                                <hr>
+                                <h5 class="text-center mb-3">Vista Previa de Resultados (últimos 10)</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped table-hover">
+                                        <thead class="table-dark">
+                                            <tr>
+                                                <th>RUC</th>
+                                                <th>Razón Social</th>
+                                                <th>Estado</th>
+                                                <th>Socios</th>
+                                                <th>Representantes</th>
+                                                <th>Órganos</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="resultsTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -60,8 +198,164 @@
 
 {% block extra_js %}
 <script>
+    // Single search form loading
     document.getElementById('searchForm').addEventListener('submit', function() {
         this.classList.add('loading');
     });
+
+    // Batch upload handling
+    let batchId = null;
+    let statusCheckInterval = null;
+
+    document.getElementById('batchUploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('batchFile');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            alert('Por favor seleccione un archivo');
+            return;
+        }
+
+        // Disable form
+        fileInput.disabled = true;
+        this.querySelector('button[type="submit"]').disabled = true;
+
+        // Show progress section
+        document.getElementById('batchProgress').style.display = 'block';
+        updateStatusMessage('Subiendo archivo...', 'info');
+
+        // Upload file
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('{% url "fup_consult:batch_upload" %}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                batchId = data.batch_id;
+                document.getElementById('totalRucs').textContent = data.total_items;
+                updateStatusMessage(`Procesando ${data.total_items} RUCs...`, 'info');
+                
+                // Start polling for status
+                statusCheckInterval = setInterval(checkBatchStatus, 2000);
+            } else {
+                updateStatusMessage('Error: ' + data.error, 'danger');
+                resetForm();
+            }
+        } catch (error) {
+            updateStatusMessage('Error al subir el archivo: ' + error.message, 'danger');
+            resetForm();
+        }
+    });
+
+    async function checkBatchStatus() {
+        if (!batchId) return;
+
+        try {
+            const response = await fetch(`/batch/${batchId}/status/`);
+            const data = await response.json();
+
+            if (data.success) {
+                const status = data.status;
+                
+                // Update counters
+                document.getElementById('totalRucs').textContent = status.total_items;
+                document.getElementById('completedRucs').textContent = status.completed_items;
+                document.getElementById('pendingRucs').textContent = status.pending_items;
+                document.getElementById('failedRucs').textContent = status.failed_items;
+
+                // Update progress bar
+                const progressBar = document.getElementById('progressBar');
+                progressBar.style.width = status.progress_percentage + '%';
+                progressBar.textContent = status.progress_percentage + '%';
+
+                // Check if completed
+                if (status.status === 'completed') {
+                    clearInterval(statusCheckInterval);
+                    updateStatusMessage('✅ Procesamiento completado exitosamente!', 'success');
+                    showDownloadButton();
+                    showResultsPreview(status.sample_results || []);
+                } else if (status.status === 'failed') {
+                    clearInterval(statusCheckInterval);
+                    updateStatusMessage('❌ Error en el procesamiento: ' + status.error_message, 'danger');
+                    resetForm();
+                } else if (status.status === 'processing') {
+                    updateStatusMessage(
+                        `⏳ Procesando... ${status.completed_items} de ${status.total_items} completados`,
+                        'info'
+                    );
+                    // Update results preview as items complete
+                    if (status.sample_results && status.sample_results.length > 0) {
+                        showResultsPreview(status.sample_results);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error checking status:', error);
+        }
+    }
+
+    function updateStatusMessage(message, type) {
+        const statusMessage = document.getElementById('statusMessage');
+        const statusText = document.getElementById('statusText');
+        statusMessage.className = `alert alert-${type} text-center`;
+        statusText.textContent = message;
+    }
+
+    function showDownloadButton() {
+        const downloadSection = document.getElementById('downloadSection');
+        downloadSection.style.display = 'block';
+        
+        document.getElementById('downloadBtn').onclick = function() {
+            window.location.href = `/batch/${batchId}/download/`;
+        };
+    }
+
+    function showResultsPreview(results) {
+        if (!results || results.length === 0) return;
+        
+        const resultsPreview = document.getElementById('resultsPreview');
+        const tableBody = document.getElementById('resultsTableBody');
+        
+        // Clear existing rows
+        tableBody.innerHTML = '';
+        
+        // Add new rows
+        results.forEach(result => {
+            const row = document.createElement('tr');
+            
+            // Estado badge color
+            let estadoBadge = 'secondary';
+            if (result.estado === 'ACTIVO') estadoBadge = 'success';
+            else if (result.estado === 'BAJA') estadoBadge = 'danger';
+            
+            row.innerHTML = `
+                <td><strong>${result.ruc}</strong></td>
+                <td>${result.razon_social}</td>
+                <td><span class="badge bg-${estadoBadge}">${result.estado}</span></td>
+                <td><span class="badge bg-info">${result.num_socios}</span></td>
+                <td><span class="badge bg-primary">${result.num_representantes}</span></td>
+                <td><span class="badge bg-warning text-dark">${result.num_organos}</span></td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        resultsPreview.style.display = 'block';
+    }
+
+    function resetForm() {
+        const fileInput = document.getElementById('batchFile');
+        const submitBtn = document.getElementById('batchUploadForm').querySelector('button[type="submit"]');
+        fileInput.disabled = false;
+        fileInput.value = '';
+        submitBtn.disabled = false;
+    }
 </script>
 {% endblock %}

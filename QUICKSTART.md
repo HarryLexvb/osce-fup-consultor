@@ -70,14 +70,40 @@ python manage.py runserver
 
 ## 🎯 Primer Uso
 
-### 1. Buscar un Proveedor
+### Modo 1: Consulta Individual
 
 1. Ir a la página principal
-2. Ingresar un RUC de 11 dígitos
-   - Ejemplo: `20508238143`
-3. Click en **"Consultar"**
+2. Tab **"Búsqueda Individual"**
+3. Ingresar un RUC de 11 dígitos
+   - Ejemplo: `20508238143` (QUANTUM ANDES S.A.C.)
+4. Click en **"Consultar"**
+5. Ver información completa del proveedor
+6. (Opcional) Click en **"Descargar Excel"** para exportar
+
+### Modo 2: Carga Masiva
+
+1. Ir a la página principal
+2. Tab **"Carga Masiva"**
+3. Preparar un archivo Excel (.xlsx) con RUCs:
+   ```
+   | RUC          |
+   |--------------|
+   | 20508238143  |
+   | 20100008662  |
+   | 20572206433  |
+   ```
+4. Click en **"Cargar y Procesar"**
+5. Monitorear progreso en tiempo real:
+   - 📊 Total de RUCs
+   - ✅ Completados
+   - ⏳ Pendientes
+   - ❌ Fallidos (con reintentos automáticos)
+6. Al finalizar, click en **"Descargar Resultados"**
 
 ### 2. Ver Resultados
+
+#### Consulta Individual
+
 
 Verás:
 - 📊 **Datos Generales**: RUC, razón social, estado, domicilio

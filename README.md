@@ -26,12 +26,16 @@ Sistema web profesional para consultar la **Ficha Única del Proveedor (FUP)** d
 ### Funcionalidades Principales
 
 ✅ **Consulta por RUC**: Búsqueda rápida de proveedores mediante RUC de 11 dígitos  
-✅ **Datos Completos**: Información general, domicilio, contactos  
-✅ **Socios/Accionistas**: Listado con porcentajes de participación  
-✅ **Representantes Legales**: Personas autorizadas con documentos  
-✅ **Órganos de Administración**: Directores, gerentes y cargos directivos  
-✅ **Exportación Excel**: Archivo .xlsx con hojas organizadas por sección  
-✅ **Interfaz Moderna**: UI responsive con Bootstrap 5  
+✅ **Carga Masiva**: Procesamiento de múltiples RUCs desde archivo Excel  
+✅ **Procesamiento Paralelo**: Hasta 20 consultas simultáneas con reintentos automáticos  
+✅ **Progreso en Tiempo Real**: Monitoreo visual del procesamiento batch  
+✅ **Datos Completos**: Información general, domicilio, contactos, teléfonos y emails  
+✅ **Socios/Accionistas**: Listado completo con porcentajes de participación y acciones  
+✅ **Representantes Legales**: Personas autorizadas con documentos y cargos  
+✅ **Órganos de Administración**: Directores, gerentes y cargos directivos detallados  
+✅ **Exportación Excel Individual**: Archivo .xlsx con hojas organizadas por sección  
+✅ **Exportación Excel Consolidada**: Archivo único con todos los proveedores procesados  
+✅ **Interfaz Moderna**: UI responsive con Bootstrap 5 y tabs de navegación  
 ✅ **API Pública OSCE**: Sin web scraping, solo APIs oficiales  
 
 ### Características Técnicas
@@ -39,6 +43,8 @@ Sistema web profesional para consultar la **Ficha Única del Proveedor (FUP)** d
 🔧 **Clean Architecture**: Separación de capas (Views → Services → Client)  
 🔧 **Type Hints**: Código completamente tipado con mypy  
 🔧 **Async/Await**: Cliente HTTP asíncrono con httpx  
+🔧 **Procesamiento Batch**: Sistema de colas con reintentos automáticos  
+🔧 **Base de Datos**: Seguimiento de trabajos batch con Django ORM  
 🔧 **Docker Ready**: Dockerfile optimizado multi-stage  
 🔧 **Tests Completos**: pytest con 100% cobertura crítica  
 🔧 **Logging**: Sistema de logs estructurado  
@@ -104,35 +110,80 @@ python manage.py runserver
 
 ## 💻 Uso
 
-### Consulta Web
+### Consulta Individual
 
-1. **Abrir navegador** en `http://localhost:8000/`
-2. **Ingresar RUC** de 11 dígitos (ejemplo: `20508238143`)
-3. **Hacer clic** en "Consultar"
-4. **Ver resultados**:
-   - 📊 Datos Generales
+1. **Abrir navegador** en `http://localhost:8000/` (o `http://localhost:8001/` si usas Docker)
+2. **Tab "Búsqueda Individual"**
+3. **Ingresar RUC** de 11 dígitos (ejemplo: `20508238143`)
+4. **Hacer clic** en "Consultar"
+5. **Ver resultados**:
+   - 📊 Datos Generales (incluyendo teléfonos y emails)
    - 👥 Socios y Accionistas
    - 📝 Representantes Legales
    - 🏢 Órganos de Administración
+6. **Descargar Excel** individual con 5 hojas organizadas
 
-### Exportar a Excel
+### Carga Masiva (Batch Processing)
 
-En la página de resultados, hacer clic en **"Descargar Excel"** para obtener un archivo con 4 hojas:
+1. **Tab "Carga Masiva"**
+2. **Preparar archivo Excel**:
+   - Primera columna: RUCs (11 dígitos)
+   - Primera fila: Puede ser encabezado "RUC" (se omitirá)
+   - Formato: `.xlsx` o `.xls`
+   - Ejemplo: 
+     ```
+     | RUC          |
+     |--------------|
+     | 20508238143  |
+     | 20100008662  |
+     | 20572206433  |
+     ```
+3. **Cargar archivo** usando el botón "Cargar y Procesar"
+4. **Monitorear progreso en tiempo real**:
+   - 📊 Total de RUCs a procesar
+   - ✅ RUCs completados exitosamente
+   - ⏳ RUCs pendientes de procesamiento
+   - ❌ RUCs fallidos (con reintentos automáticos hasta 3 veces)
+   - Barra de progreso visual
+5. **Descargar Excel consolidado** al finalizar con 5 hojas:
 
 | Hoja | Contenido |
 |------|-----------|
-| `DatosGenerales` | RUC, razón social, estado, domicilio, contactos |
-| `SociosAccionistas` | Listado completo con porcentajes |
-| `Representantes` | Representantes legales con documentos |
-| `OrganosAdministracion` | Cargos directivos y gerenciales |
+| `Resumen` | Estadísticas del batch: totales, estados, tipos de contribuyente |
+| `Datos Consolidados` | Todos los proveedores en una tabla con filtros |
+| `Socios Detallados` | Todos los socios de todas las empresas con RUC, nombre, % participación |
+| `Representantes Detallados` | Todos los representantes con RUC de empresa, nombre, cargo, fechas |
+| `Organos Administracion` | Todos los órganos con tipo, cargo, miembros |
+
+### Exportar a Excel (Individual)
+
+En la página de resultados de consulta individual, hacer clic en **"Descargar Excel"** para obtener un archivo con 5 hojas:
+
+| Hoja | Contenido |
+|------|-----------|
+| `DatosGenerales` | RUC, razón social, estado, domicilio, teléfonos, emails, departamento, provincia, distrito |
+| `SociosAccionistas` | Nombre, tipo documento, número, porcentaje, número de acciones, fecha ingreso |
+| `Representantes` | Nombre, tipo documento, número, cargo, fecha desde |
+| `OrganosAdministracion` | Nombre, tipo órgano (GERENCIA/DIRECTORIO), cargo, fecha desde |
+| `Experiencia` | Contratos y experiencia laboral (si disponible) |
 
 ### Ejemplos de RUC
 
 ```
-20508238143  # QUANTUM ANDES S.A.C.
+20508238143  # QUANTUM ANDES S.A.C. (con socios, representantes, teléfono y email)
+20100008662  # EMPRESA EJEMPLO S.A.
 20572206433  # OTRA EMPRESA S.A.C.
 10732723175  # PERSONA NATURAL (sin conformación)
 ```
+
+### Características del Procesamiento Batch
+
+- ⚡ **Paralelismo**: Hasta 20 consultas simultáneas
+- 🔄 **Reintentos automáticos**: Hasta 3 intentos por RUC fallido
+- 📊 **Progreso en tiempo real**: Actualización cada 2 segundos
+- 💾 **Persistencia**: Los resultados se guardan en base de datos
+- 📥 **Descarga asíncrona**: El Excel se genera en segundo plano
+- ⏱️ **Rendimiento**: ~100-200 RUCs por minuto (depende de la API de OSCE)
 
 ## 📁 Estructura del Proyecto
 
