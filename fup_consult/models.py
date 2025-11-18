@@ -19,6 +19,10 @@ class GeneralData:
     condicion: str
     tipo_contribuyente: str
     domicilio: Optional[str] = None  # Complete address e.g., "LIMA / LIMA / SAN ISIDRO"
+    departamento: Optional[str] = None
+    provincia: Optional[str] = None
+    distrito: Optional[str] = None
+    personeria: Optional[str] = None  # Código de personería
     telefonos: List[str] = None
     emails: List[str] = None
     fecha_inscripcion: Optional[str] = None
@@ -40,6 +44,9 @@ class Socio:
     tipo_documento: str
     numero_documento: str
     porcentaje_participacion: Optional[str] = None
+    numero_acciones: Optional[float] = None
+    desc_tipo_documento: Optional[str] = None
+    fecha_ingreso: Optional[str] = None
 
 
 @dataclass
@@ -50,6 +57,7 @@ class Representante:
     tipo_documento: str
     numero_documento: str
     cargo: Optional[str] = None
+    desc_tipo_documento: Optional[str] = None
     fecha_desde: Optional[str] = None
 
 
@@ -61,6 +69,8 @@ class OrganoAdministracion:
     tipo_documento: str
     numero_documento: str
     cargo: str
+    desc_tipo_documento: Optional[str] = None
+    tipo_organo: Optional[str] = None  # GERENCIA, DIRECTORIO, etc.
     fecha_desde: Optional[str] = None
 
 

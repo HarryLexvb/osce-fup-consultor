@@ -73,6 +73,10 @@ class FUPService:
                 condicion=data_raw["condicion"],
                 tipo_contribuyente=data_raw["tipo_contribuyente"],
                 domicilio=data_raw["domicilio"],
+                departamento=data_raw.get("departamento"),
+                provincia=data_raw.get("provincia"),
+                distrito=data_raw.get("distrito"),
+                personeria=data_raw.get("personeria"),
                 telefonos=data_raw.get("telefonos", []),
                 emails=data_raw.get("emails", [])
             )
@@ -83,7 +87,10 @@ class FUPService:
                     nombre_completo=s["nombre_completo"],
                     tipo_documento=s["tipo_documento"],
                     numero_documento=s["numero_documento"],
-                    porcentaje_participacion=str(s["porcentaje_participacion"]) if s["porcentaje_participacion"] else None
+                    porcentaje_participacion=str(s["porcentaje_participacion"]) if s["porcentaje_participacion"] else None,
+                    numero_acciones=s.get("numero_acciones"),
+                    desc_tipo_documento=s.get("desc_tipo_documento"),
+                    fecha_ingreso=s.get("fecha_ingreso")
                 )
                 for s in data_raw.get("socios", [])
             ]
@@ -93,7 +100,9 @@ class FUPService:
                     nombre_completo=r["nombre_completo"],
                     tipo_documento=r["tipo_documento"],
                     numero_documento=r["numero_documento"],
-                    cargo=r.get("cargo", "REPRESENTANTE LEGAL")
+                    cargo=r.get("cargo", "REPRESENTANTE LEGAL"),
+                    desc_tipo_documento=r.get("desc_tipo_documento"),
+                    fecha_desde=r.get("fecha_desde")
                 )
                 for r in data_raw.get("representantes", [])
             ]
@@ -103,7 +112,10 @@ class FUPService:
                     nombre_completo=o["nombre_completo"],
                     tipo_documento=o["tipo_documento"],
                     numero_documento=o["numero_documento"],
-                    cargo=o["cargo"]
+                    cargo=o["cargo"],
+                    desc_tipo_documento=o.get("desc_tipo_documento"),
+                    tipo_organo=o.get("tipo_organo"),
+                    fecha_desde=o.get("fecha_desde")
                 )
                 for o in data_raw.get("organos", [])
             ]

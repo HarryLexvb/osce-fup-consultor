@@ -74,7 +74,11 @@ class ExcelExporter:
             ("Estado", general.estado),
             ("Condición", general.condicion),
             ("Tipo de Contribuyente", general.tipo_contribuyente),
-            ("Domicilio", general.domicilio or ""),
+            ("Domicilio Completo", general.domicilio or ""),
+            ("Departamento", general.departamento or ""),
+            ("Provincia", general.provincia or ""),
+            ("Distrito", general.distrito or ""),
+            ("Personería", general.personeria or ""),
             ("Teléfonos", ", ".join(general.telefonos) if general.telefonos else ""),
             ("Emails", ", ".join(general.emails) if general.emails else ""),
         ]
@@ -97,7 +101,15 @@ class ExcelExporter:
         ws = wb.create_sheet("SociosAccionistas")
 
         # Headers
-        headers = ["Nombre Completo", "Tipo Documento", "Número Documento", "Participación"]
+        headers = [
+            "Nombre Completo",
+            "Tipo Documento",
+            "Descripción Documento",
+            "Número Documento",
+            "Participación %",
+            "Número de Acciones",
+            "Fecha Ingreso"
+        ]
         for col_idx, header in enumerate(headers, start=1):
             cell = ws.cell(row=1, column=col_idx)
             cell.value = header
@@ -107,8 +119,11 @@ class ExcelExporter:
         for row_idx, socio in enumerate(provider_data.socios, start=2):
             ws.cell(row=row_idx, column=1, value=socio.nombre_completo)
             ws.cell(row=row_idx, column=2, value=socio.tipo_documento)
-            ws.cell(row=row_idx, column=3, value=socio.numero_documento)
-            ws.cell(row=row_idx, column=4, value=socio.porcentaje_participacion or "")
+            ws.cell(row=row_idx, column=3, value=socio.desc_tipo_documento or "")
+            ws.cell(row=row_idx, column=4, value=socio.numero_documento)
+            ws.cell(row=row_idx, column=5, value=socio.porcentaje_participacion or "")
+            ws.cell(row=row_idx, column=6, value=socio.numero_acciones or "")
+            ws.cell(row=row_idx, column=7, value=socio.fecha_ingreso or "")
 
         if not provider_data.socios:
             ws.cell(row=2, column=1, value="Sin información disponible")
@@ -120,7 +135,14 @@ class ExcelExporter:
         ws = wb.create_sheet("Representantes")
 
         # Headers
-        headers = ["Nombre Completo", "Tipo Documento", "Número Documento", "Cargo", "Desde"]
+        headers = [
+            "Nombre Completo",
+            "Tipo Documento",
+            "Descripción Documento",
+            "Número Documento",
+            "Cargo",
+            "Desde"
+        ]
         for col_idx, header in enumerate(headers, start=1):
             cell = ws.cell(row=1, column=col_idx)
             cell.value = header
@@ -130,9 +152,10 @@ class ExcelExporter:
         for row_idx, rep in enumerate(provider_data.representantes, start=2):
             ws.cell(row=row_idx, column=1, value=rep.nombre_completo)
             ws.cell(row=row_idx, column=2, value=rep.tipo_documento)
-            ws.cell(row=row_idx, column=3, value=rep.numero_documento)
-            ws.cell(row=row_idx, column=4, value=rep.cargo or "")
-            ws.cell(row=row_idx, column=5, value=rep.fecha_desde or "")
+            ws.cell(row=row_idx, column=3, value=rep.desc_tipo_documento or "")
+            ws.cell(row=row_idx, column=4, value=rep.numero_documento)
+            ws.cell(row=row_idx, column=5, value=rep.cargo or "")
+            ws.cell(row=row_idx, column=6, value=rep.fecha_desde or "")
 
         if not provider_data.representantes:
             ws.cell(row=2, column=1, value="Sin información disponible")
@@ -144,7 +167,15 @@ class ExcelExporter:
         ws = wb.create_sheet("OrganosAdministracion")
 
         # Headers
-        headers = ["Nombre Completo", "Tipo Documento", "Número Documento", "Cargo", "Desde"]
+        headers = [
+            "Nombre Completo",
+            "Tipo Documento",
+            "Descripción Documento",
+            "Número Documento",
+            "Tipo de Órgano",
+            "Cargo",
+            "Desde"
+        ]
         for col_idx, header in enumerate(headers, start=1):
             cell = ws.cell(row=1, column=col_idx)
             cell.value = header
@@ -154,9 +185,11 @@ class ExcelExporter:
         for row_idx, org in enumerate(provider_data.organos_administracion, start=2):
             ws.cell(row=row_idx, column=1, value=org.nombre_completo)
             ws.cell(row=row_idx, column=2, value=org.tipo_documento)
-            ws.cell(row=row_idx, column=3, value=org.numero_documento)
-            ws.cell(row=row_idx, column=4, value=org.cargo)
-            ws.cell(row=row_idx, column=5, value=org.fecha_desde or "")
+            ws.cell(row=row_idx, column=3, value=org.desc_tipo_documento or "")
+            ws.cell(row=row_idx, column=4, value=org.numero_documento)
+            ws.cell(row=row_idx, column=5, value=org.tipo_organo or "")
+            ws.cell(row=row_idx, column=6, value=org.cargo)
+            ws.cell(row=row_idx, column=7, value=org.fecha_desde or "")
 
         if not provider_data.organos_administracion:
             ws.cell(row=2, column=1, value="Sin información disponible")

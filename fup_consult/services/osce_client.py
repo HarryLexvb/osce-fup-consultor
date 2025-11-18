@@ -131,7 +131,10 @@ class OSCEClient:
                 "nombre_completo": socio.get("razonSocial", "").strip(),
                 "tipo_documento": socio.get("siglaDocIde", ""),
                 "numero_documento": socio.get("nroDocumento", ""),
-                "porcentaje_participacion": socio.get("porcentajeAcciones")
+                "porcentaje_participacion": socio.get("porcentajeAcciones"),
+                "numero_acciones": socio.get("numeroAcciones"),
+                "desc_tipo_documento": socio.get("descDocIde", ""),
+                "fecha_ingreso": socio.get("fechaIngreso", "")
             })
         
         # Extract representantes
@@ -141,7 +144,9 @@ class OSCEClient:
                 "nombre_completo": rep.get("razonSocial", "").strip(),
                 "tipo_documento": rep.get("siglaDocIde", ""),
                 "numero_documento": rep.get("nroDocumento", ""),
-                "cargo": "REPRESENTANTE LEGAL"
+                "cargo": "REPRESENTANTE LEGAL",
+                "desc_tipo_documento": rep.get("descDocIde", ""),
+                "fecha_desde": rep.get("fechaIngreso", "")
             })
         
         # Extract organos
@@ -151,7 +156,10 @@ class OSCEClient:
                 "nombre_completo": org.get("apellidosNomb", "").strip(),
                 "tipo_documento": org.get("siglaDocIde", ""),
                 "numero_documento": org.get("nroDocumento", ""),
-                "cargo": org.get("descCargo", "")
+                "cargo": org.get("descCargo", ""),
+                "desc_tipo_documento": org.get("descDocIde", ""),
+                "tipo_organo": org.get("descTipoOrgano", ""),
+                "fecha_desde": org.get("fechaIngreso", "")
             })
         
         # Build domicilio
@@ -167,6 +175,10 @@ class OSCEClient:
             "condicion": datos_sunat.get("condicion", ""),
             "tipo_contribuyente": datos_sunat.get("tipoEmpresa", ""),
             "domicilio": domicilio,
+            "departamento": departamento,
+            "provincia": provincia,
+            "distrito": distrito,
+            "personeria": datos_sunat.get("personeria", ""),
             "telefonos": [],  # Not in this endpoint
             "emails": [],  # Not in this endpoint
             "socios": socios,
