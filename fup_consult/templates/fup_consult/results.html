@@ -41,15 +41,14 @@
                         <p><strong>Tipo de Contribuyente:</strong> {{ provider_data.general.tipo_contribuyente }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Departamento:</strong> {{ provider_data.general.departamento }}</p>
-                        <p><strong>Provincia:</strong> {{ provider_data.general.provincia }}</p>
-                        <p><strong>Distrito:</strong> {{ provider_data.general.distrito }}</p>
-                        <p><strong>Dirección:</strong> {{ provider_data.general.direccion }}</p>
+                        {% if provider_data.general.domicilio %}
+                        <p><strong>Domicilio(**):</strong> {{ provider_data.general.domicilio }}</p>
+                        {% endif %}
                         {% if provider_data.general.telefonos %}
-                        <p><strong>Teléfonos:</strong> {{ provider_data.general.telefonos|join:", " }}</p>
+                        <p><strong>Teléfonos(*):</strong> {{ provider_data.general.telefonos|join:", " }}</p>
                         {% endif %}
                         {% if provider_data.general.emails %}
-                        <p><strong>Emails:</strong> {{ provider_data.general.emails|join:", " }}</p>
+                        <p><strong>Emails(*):</strong> {{ provider_data.general.emails|join:", " }}</p>
                         {% endif %}
                     </div>
                 </div>
@@ -85,8 +84,12 @@
                         </tbody>
                     </table>
                 </div>
-                {% else %}
-                <p class="text-muted">No hay información de socios disponible.</p>
+                {% else  %}
+                <p class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    No hay información de socios disponible en la API pública de OSCE.
+                    <br><small>Estos datos requieren acceso a APIs adicionales o integración con SUNAT.</small>
+                </p>
                 {% endif %}
             </div>
         </div>
@@ -121,7 +124,11 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted">No hay información de representantes disponible.</p>
+                <p class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    No hay información de representantes disponible en la API pública de OSCE.
+                    <br><small>Estos datos requieren acceso a APIs adicionales o integración con SUNAT.</small>
+                </p>
                 {% endif %}
             </div>
         </div>
@@ -156,52 +163,11 @@
                     </table>
                 </div>
                 {% else %}
-                <p class="text-muted">No hay información de órganos de administración disponible.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <!-- Experiencia del Proveedor -->
-        <div class="section-card">
-            <div class="section-title">
-                <i class="bi bi-briefcase"></i> Experiencia del Proveedor
-            </div>
-            <div class="card-body">
-                {% if provider_data.experiencia %}
-                <p class="mb-3">
-                    <strong>Total de contratos:</strong> 
-                    <span class="badge bg-info">{{ provider_data.experiencia|length }}</span>
-                </p>
-                <div class="table-responsive">
-                    <table class="table table-striped table-hover">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>N° Contrato</th>
-                                <th>Entidad</th>
-                                <th>Objeto</th>
-                                <th>Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for contrato in provider_data.experiencia|slice:":10" %}
-                            <tr>
-                                <td>{{ contrato.numero_contrato }}</td>
-                                <td>{{ contrato.entidad }}</td>
-                                <td>{{ contrato.objeto_contractual|truncatewords:10 }}</td>
-                                <td>{{ contrato.estado|default:"-" }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% if provider_data.experiencia|length > 10 %}
-                <p class="text-muted small">
+                <p class="text-muted">
                     <i class="bi bi-info-circle"></i>
-                    Mostrando los primeros 10 contratos. Descargue el Excel para ver todos.
+                    No hay información de órganos de administración disponible en la API pública de OSCE.
+                    <br><small>Estos datos requieren acceso a APIs adicionales o integración con SUNAT.</small>
                 </p>
-                {% endif %}
-                {% else %}
-                <p class="text-muted">No hay información de experiencia disponible.</p>
                 {% endif %}
             </div>
         </div>

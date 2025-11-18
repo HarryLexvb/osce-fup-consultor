@@ -18,15 +18,18 @@ class GeneralData:
     estado: str
     condicion: str
     tipo_contribuyente: str
-    departamento: str
-    provincia: str
-    distrito: str
-    direccion: str
-    telefonos: List[str]
-    emails: List[str]
+    domicilio: Optional[str] = None  # Complete address e.g., "LIMA / LIMA / SAN ISIDRO"
+    telefonos: List[str] = None
+    emails: List[str] = None
     fecha_inscripcion: Optional[str] = None
     sistema_emision: Optional[str] = None
     actividad_economica: Optional[str] = None
+    
+    def __post_init__(self):
+        if self.telefonos is None:
+            self.telefonos = []
+        if self.emails is None:
+            self.emails = []
 
 
 @dataclass

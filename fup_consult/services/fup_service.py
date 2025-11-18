@@ -17,6 +17,8 @@ from fup_consult.models import (
     Socio,
 )
 from fup_consult.services.osce_client import OSCEAPIException, OSCEClient
+from fup_consult.services.sunat_scraper import SUNATScraper, SUNATScraperException
+from fup_consult.services.osce_angular_scraper import OSCEAngularScraper, OSCEAngularScraperException
 
 logger = logging.getLogger(__name__)
 
@@ -24,18 +26,33 @@ logger = logging.getLogger(__name__)
 class FUPService:
     """Service for retrieving and normalizing FUP data."""
 
-    def __init__(self, client: OSCEClient = None) -> None:
+    def __init__(self, client: OSCEClient = None, use_sunat: bool = True, use_osce_angular: bool = True) -> None:
         """
         Initialize FUP service.
 
         Args:
             client: OSCE API client (creates new one if not provided)
+            use_sunat: Whether to use SUNAT scraping for additional data
+            use_osce_angular: Whether to use OSCE Angular scraping for socios/representantes/organos
         """
         self.client = client or OSCEClient()
+        self.use_sunat = use_sunat
+        self.use_osce_angular = use_osce_angular
+        
+        if use_sunat:
+            self.sunat_scraper = SUNATScraper()
+        else:
+            self.sunat_scraper = None
+        
+        if use_osce_angular:
+            self.osce_angular_scraper = OSCEAngularScraper()
+        else:
+            self.osce_angular_scraper = None
 
     async def get_provider_data(self, ruc: str) -> ProviderData:
         """
         Get complete provider data for given RUC.
+        Uses the /ficha/{ruc}/resumen endpoint which includes all data.
 
         Args:
             ruc: Provider's RUC number
@@ -44,29 +61,64 @@ class FUPService:
             Complete provider data
         """
         try:
-            # Fetch general data (required)
-            general_data_raw = await self.client.get_provider_general_data(ruc)
-            general_data = self._normalize_general_data(general_data_raw)
-
-            # Fetch optional data (non-blocking if fails)
-            sociedades_raw = await self.client.get_sociedades(ruc)
-            socios = self._normalize_socios(sociedades_raw)
-
-            representantes_raw = await self.client.get_representantes(ruc)
-            representantes = self._normalize_representantes(representantes_raw)
-
-            organos_raw = await self.client.get_organos_administracion(ruc)
-            organos = self._normalize_organos(organos_raw)
-
-            experiencia_raw = await self.client.get_experiencia(ruc)
-            experiencia = self._normalize_experiencia(experiencia_raw)
+            # Fetch complete data from OSCE /resumen endpoint
+            # This endpoint includes datosSunat + conformacion (socios, representantes, organos)
+            data_raw = await self.client.get_provider_general_data(ruc)
+            
+            # The new endpoint returns already normalized data
+            general_data = GeneralData(
+                ruc=data_raw["ruc"],
+                razon_social=data_raw["razon_social"],
+                estado=data_raw["estado"],
+                condicion=data_raw["condicion"],
+                tipo_contribuyente=data_raw["tipo_contribuyente"],
+                domicilio=data_raw["domicilio"],
+                telefonos=data_raw.get("telefonos", []),
+                emails=data_raw.get("emails", [])
+            )
+            
+            # Convert to model objects
+            socios = [
+                Socio(
+                    nombre_completo=s["nombre_completo"],
+                    tipo_documento=s["tipo_documento"],
+                    numero_documento=s["numero_documento"],
+                    porcentaje_participacion=str(s["porcentaje_participacion"]) if s["porcentaje_participacion"] else None
+                )
+                for s in data_raw.get("socios", [])
+            ]
+            
+            representantes = [
+                Representante(
+                    nombre_completo=r["nombre_completo"],
+                    tipo_documento=r["tipo_documento"],
+                    numero_documento=r["numero_documento"],
+                    cargo=r.get("cargo", "REPRESENTANTE LEGAL")
+                )
+                for r in data_raw.get("representantes", [])
+            ]
+            
+            organos = [
+                OrganoAdministracion(
+                    nombre_completo=o["nombre_completo"],
+                    tipo_documento=o["tipo_documento"],
+                    numero_documento=o["numero_documento"],
+                    cargo=o["cargo"]
+                )
+                for o in data_raw.get("organos", [])
+            ]
+            
+            logger.info(f"Successfully fetched data for {ruc}: "
+                       f"{len(socios)} socios, "
+                       f"{len(representantes)} representantes, "
+                       f"{len(organos)} órganos")
 
             return ProviderData(
                 general=general_data,
                 socios=socios,
                 representantes=representantes,
                 organos_administracion=organos,
-                experiencia=experiencia,
+                experiencia=[],  # Not requested by user
             )
 
         except OSCEAPIException as e:
@@ -79,10 +131,7 @@ class FUPService:
                     estado="",
                     condicion="",
                     tipo_contribuyente="",
-                    departamento="",
-                    provincia="",
-                    distrito="",
-                    direccion="",
+                    domicilio=None,
                     telefonos=[],
                     emails=[],
                 ),
@@ -105,21 +154,29 @@ class FUPService:
         """
         proveedor = raw_data.get("proveedorT01", {})
 
+        # Map tipo_personeria to readable format
+        tipo_persona_map = {
+            1: "PERSONA NATURAL",
+            2: "SOCIEDAD ANONIMA CERRADA",
+            3: "SOCIEDAD ANONIMA",
+            4: "EMPRESA INDIVIDUAL DE RESPONSABILIDAD LIMITADA",
+            5: "SOCIEDAD COMERCIAL DE RESPONSABILIDAD LIMITADA"
+        }
+        tipo_persona = tipo_persona_map.get(proveedor.get("tipoPersoneria", 0), "OTRO")
+
+        # Map OSCE API fields to our data model
         return GeneralData(
-            ruc=proveedor.get("ruc", ""),
-            razon_social=proveedor.get("razonSocial", ""),
-            estado=proveedor.get("estado", ""),
-            condicion=proveedor.get("condicion", ""),
-            tipo_contribuyente=proveedor.get("tipoContribuyente", ""),
-            departamento=proveedor.get("departamento", ""),
-            provincia=proveedor.get("provincia", ""),
-            distrito=proveedor.get("distrito", ""),
-            direccion=proveedor.get("direccion", ""),
+            ruc=proveedor.get("numRuc", ""),
+            razon_social=proveedor.get("nomRzsProv", ""),
+            estado="ACTIVO" if proveedor.get("esHabilitado") else "INACTIVO",
+            condicion="HABIDO" if proveedor.get("esAptoContratar") else "NO HABIDO",
+            tipo_contribuyente=tipo_persona,
+            domicilio=None,  # Will be set from SUNAT scraping
             telefonos=proveedor.get("telefonos", []),
             emails=proveedor.get("emails", []),
-            fecha_inscripcion=proveedor.get("fechaInscripcion"),
-            sistema_emision=proveedor.get("sistemaEmision"),
-            actividad_economica=proveedor.get("actividadEconomica"),
+            fecha_inscripcion=None,
+            sistema_emision=None,
+            actividad_economica=None,
         )
 
     def _normalize_socios(self, raw_data: Dict[str, Any]) -> List[Socio]:

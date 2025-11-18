@@ -61,7 +61,12 @@ def results_view(request: HttpRequest, ruc: str) -> HttpResponse:
 
     # Fetch provider data
     try:
-        service = FUPService()
+        # Read USE_SUNAT_SCRAPING from environment
+        import os
+        use_sunat = os.getenv("USE_SUNAT_SCRAPING", "False").lower() == "true"
+        use_osce_angular = os.getenv("USE_OSCE_ANGULAR_SCRAPING", "True").lower() == "true"
+        
+        service = FUPService(use_sunat=use_sunat, use_osce_angular=use_osce_angular)
         provider_data = asyncio.run(service.get_provider_data(ruc))
 
         if provider_data.error_message:
@@ -105,7 +110,11 @@ def download_excel_view(request: HttpRequest, ruc: str) -> HttpResponse:
     """
     try:
         # Fetch provider data
-        service = FUPService()
+        import os
+        use_sunat = os.getenv("USE_SUNAT_SCRAPING", "False").lower() == "true"
+        use_osce_angular = os.getenv("USE_OSCE_ANGULAR_SCRAPING", "True").lower() == "true"
+        
+        service = FUPService(use_sunat=use_sunat, use_osce_angular=use_osce_angular)
         provider_data = asyncio.run(service.get_provider_data(ruc))
 
         if provider_data.error_message:

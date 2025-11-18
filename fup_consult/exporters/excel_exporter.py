@@ -74,10 +74,7 @@ class ExcelExporter:
             ("Estado", general.estado),
             ("Condición", general.condicion),
             ("Tipo de Contribuyente", general.tipo_contribuyente),
-            ("Departamento", general.departamento),
-            ("Provincia", general.provincia),
-            ("Distrito", general.distrito),
-            ("Dirección", general.direccion),
+            ("Domicilio", general.domicilio or ""),
             ("Teléfonos", ", ".join(general.telefonos) if general.telefonos else ""),
             ("Emails", ", ".join(general.emails) if general.emails else ""),
         ]

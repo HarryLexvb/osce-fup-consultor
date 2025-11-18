@@ -100,23 +100,84 @@ class OSCEClient:
 
     async def get_provider_general_data(self, ruc: str) -> Dict[str, Any]:
         """
-        Get general provider data from perfilprov-bus.
+        Get complete provider data including conformacion from ficha-proveedor-cns/resumen.
+        This endpoint includes:
+        - datosSunat: Basic data (RUC, razon social, estado, domicilio, etc.)
+        - conformacion: socios, representantes, organosAdm
 
         Args:
             ruc: Provider's RUC number
 
         Returns:
-            Provider general data dictionary
+            Provider complete data dictionary with parsed structure
 
         Raises:
             OSCEAPIException: If request fails
         """
-        url = f"{self.perfilprov_base}/ficha/{ruc}"
-        return await self._make_request(url)
+        url = f"{self.fup_base}/ficha/{ruc}/resumen"
+        data = await self._make_request(url)
+        
+        # Parse and structure the response
+        datos_sunat = data.get("datosSunat", {})
+        conformacion = data.get("conformacion", {})
+        
+        if not datos_sunat:
+            raise OSCEAPIException(f"No data found for RUC {ruc}")
+        
+        # Extract socios
+        socios = []
+        for socio in conformacion.get("socios", []):
+            socios.append({
+                "nombre_completo": socio.get("razonSocial", "").strip(),
+                "tipo_documento": socio.get("siglaDocIde", ""),
+                "numero_documento": socio.get("nroDocumento", ""),
+                "porcentaje_participacion": socio.get("porcentajeAcciones")
+            })
+        
+        # Extract representantes
+        representantes = []
+        for rep in conformacion.get("representantes", []):
+            representantes.append({
+                "nombre_completo": rep.get("razonSocial", "").strip(),
+                "tipo_documento": rep.get("siglaDocIde", ""),
+                "numero_documento": rep.get("nroDocumento", ""),
+                "cargo": "REPRESENTANTE LEGAL"
+            })
+        
+        # Extract organos
+        organos = []
+        for org in conformacion.get("organosAdm", []):
+            organos.append({
+                "nombre_completo": org.get("apellidosNomb", "").strip(),
+                "tipo_documento": org.get("siglaDocIde", ""),
+                "numero_documento": org.get("nroDocumento", ""),
+                "cargo": org.get("descCargo", "")
+            })
+        
+        # Build domicilio
+        departamento = datos_sunat.get("departamento", "")
+        provincia = datos_sunat.get("provincia", "")
+        distrito = datos_sunat.get("distrito", "")
+        domicilio = f"{distrito}, {provincia}, {departamento}" if distrito else ""
+        
+        return {
+            "ruc": datos_sunat.get("ruc"),
+            "razon_social": datos_sunat.get("razon"),
+            "estado": datos_sunat.get("estado", ""),
+            "condicion": datos_sunat.get("condicion", ""),
+            "tipo_contribuyente": datos_sunat.get("tipoEmpresa", ""),
+            "domicilio": domicilio,
+            "telefonos": [],  # Not in this endpoint
+            "emails": [],  # Not in this endpoint
+            "socios": socios,
+            "representantes": representantes,
+            "organos": organos
+        }
 
     async def get_sociedades(self, ruc: str) -> Dict[str, Any]:
         """
         Get shareholders/partners data.
+        Note: This endpoint currently returns 404. Data needs to be obtained from another source.
 
         Args:
             ruc: Provider's RUC number
@@ -127,6 +188,9 @@ class OSCEClient:
         Raises:
             OSCEAPIException: If request fails
         """
+        # TODO: Find correct API endpoint for sociedades data
+        # The perfilprov-bus/1.0/ficha endpoint doesn't include this information
+        # May need to use SUNAT API or web scraping
         url = f"{self.fup_base}/sociedades/{ruc}"
         try:
             return await self._make_request(url)
