@@ -439,9 +439,10 @@ of this software and associated documentation files (the "Software")...
 
 **Harold Alejandro Villanueva Borda**
 
-- 💼 Ingeniero de Software
+- 💼 Computer Science
 - 🎯 Especialización: Python/Django, Clean Architecture, DevOps
 - 🔗 GitHub: [@HarryLexvb](https://github.com/HarryLexvb)
+- 📧 Mail: harrylex8@gmail.com
 
 ## 🙏 Agradecimientos
 
