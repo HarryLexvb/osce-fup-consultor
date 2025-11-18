@@ -104,6 +104,8 @@ class OSCEClient:
         This endpoint includes:
         - datosSunat: Basic data (RUC, razon social, estado, domicilio, etc.)
         - conformacion: socios, representantes, organosAdm
+        
+        Also fetches telefonos and emails from perfilprov-bus endpoint.
 
         Args:
             ruc: Provider's RUC number
@@ -114,8 +116,21 @@ class OSCEClient:
         Raises:
             OSCEAPIException: If request fails
         """
+        # Get main data from ficha-proveedor-cns
         url = f"{self.fup_base}/ficha/{ruc}/resumen"
         data = await self._make_request(url)
+        
+        # Get telefonos and emails from perfilprov-bus
+        telefonos = []
+        emails = []
+        try:
+            perfil_url = f"{self.perfilprov_base}/ficha/{ruc}"
+            perfil_data = await self._make_request(perfil_url)
+            proveedor = perfil_data.get("proveedorT01", {})
+            telefonos = proveedor.get("telefonos", [])
+            emails = proveedor.get("emails", [])
+        except Exception as e:
+            logger.warning(f"Could not fetch telefonos/emails for {ruc}: {e}")
         
         # Parse and structure the response
         datos_sunat = data.get("datosSunat", {})
@@ -179,8 +194,8 @@ class OSCEClient:
             "provincia": provincia,
             "distrito": distrito,
             "personeria": datos_sunat.get("personeria", ""),
-            "telefonos": [],  # Not in this endpoint
-            "emails": [],  # Not in this endpoint
+            "telefonos": telefonos,
+            "emails": emails,
             "socios": socios,
             "representantes": representantes,
             "organos": organos
