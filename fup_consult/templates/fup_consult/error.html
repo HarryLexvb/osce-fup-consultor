@@ -1,0 +1,31 @@
+{% extends "fup_consult/base.html" %}
+
+{% block title %}Error - Consulta FUP{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Error
+                </h3>
+            </div>
+            <div class="card-body text-center py-5">
+                <i class="bi bi-x-circle text-danger" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">{{ error_message }}</h4>
+                <p class="text-muted mt-3">
+                    Por favor, verifique la información e intente nuevamente.
+                </p>
+                <div class="mt-4">
+                    <a href="{% url 'fup_consult:search' %}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left"></i>
+                        Volver a la búsqueda
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "fup_consult/base.html" %}
+
+{% block title %}Búsqueda por RUC - OSCE{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body p-5">
+                <h2 class="text-center mb-4">
+                    <i class="bi bi-search text-primary"></i>
+                    Consultar Ficha del Proveedor
+                </h2>
+                <p class="text-center text-muted mb-4">
+                    Ingrese el número de RUC para consultar la información del proveedor
+                </p>
+
+                <form method="post" id="searchForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        {{ form.ruc.label_tag }}
+                        {{ form.ruc }}
+                        {% if form.ruc.errors %}
+                            <div class="alert alert-danger mt-2">
+                                {% for error in form.ruc.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">{{ form.ruc.help_text }}</div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-search"></i>
+                            Consultar
+                        </button>
+                    </div>
+                </form>
+
+                <div class="spinner-wrapper">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Consultando información...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4 text-white">
+            <p>
+                <i class="bi bi-info-circle"></i>
+                Esta herramienta consulta información pública disponible en el portal del OSCE
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('searchForm').addEventListener('submit', function() {
+        this.classList.add('loading');
+    });
+</script>
+{% endblock %}
