@@ -152,11 +152,26 @@
                                 <span id="statusText">Iniciando procesamiento...</span>
                             </div>
 
+                            <!-- Format Info Alert -->
+                            <div id="formatInfo" class="alert alert-success" style="display: none;">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Formato de descarga:</strong>
+                                <span id="formatText"></span>
+                                <small class="d-block mt-1">
+                                    • Menos de 1,000 RUCs: Excel con formato completo<br>
+                                    • 1,000 - 10,000 RUCs: Excel optimizado<br>
+                                    • Más de 10,000 RUCs: CSV (compatible con Excel)
+                                </small>
+                            </div>
+
                             <div id="downloadSection" style="display: none;" class="text-center">
-                                <button id="downloadBtn" class="btn btn-primary btn-lg">
+                                <button id="downloadBtn" class="btn btn-success btn-lg">
                                     <i class="bi bi-download"></i>
-                                    Descargar Resultados
+                                    <span id="downloadBtnText">Descargar Resultados</span>
                                 </button>
+                                <p class="text-muted mt-2">
+                                    <small id="downloadInfo"></small>
+                                </p>
                             </div>
 
                             <!-- Results Preview Table -->
@@ -311,7 +326,33 @@
 
     function showDownloadButton() {
         const downloadSection = document.getElementById('downloadSection');
+        const formatInfo = document.getElementById('formatInfo');
+        const totalRucs = parseInt(document.getElementById('totalRucs').textContent);
+        
         downloadSection.style.display = 'block';
+        formatInfo.style.display = 'block';
+        
+        // Determine format based on total RUCs
+        let formatType = '';
+        let formatIcon = '';
+        if (totalRucs > 10000) {
+            formatType = 'CSV (compatible con Excel)';
+            formatIcon = '📄';
+            document.getElementById('formatText').innerHTML = `${formatIcon} Se generará un archivo <strong>CSV</strong> optimizado para ${totalRucs.toLocaleString()} registros`;
+            document.getElementById('downloadInfo').textContent = 'Archivo CSV optimizado para grandes volúmenes. Compatible con Excel.';
+        } else if (totalRucs > 1000) {
+            formatType = 'Excel Optimizado';
+            formatIcon = '📊';
+            document.getElementById('formatText').innerHTML = `${formatIcon} Se generará un archivo <strong>Excel Optimizado</strong> para ${totalRucs.toLocaleString()} registros`;
+            document.getElementById('downloadInfo').textContent = 'Archivo Excel con 5 hojas. Optimizado para rendimiento.';
+        } else {
+            formatType = 'Excel Completo';
+            formatIcon = '📑';
+            document.getElementById('formatText').innerHTML = `${formatIcon} Se generará un archivo <strong>Excel</strong> con formato completo para ${totalRucs.toLocaleString()} registros`;
+            document.getElementById('downloadInfo').textContent = 'Archivo Excel con 5 hojas y formato completo.';
+        }
+        
+        document.getElementById('downloadBtnText').textContent = `Descargar ${formatType}`;
         
         document.getElementById('downloadBtn').onclick = function() {
             window.location.href = `/batch/${batchId}/download/`;

@@ -97,8 +97,24 @@ python manage.py runserver
    - 📊 Total de RUCs
    - ✅ Completados
    - ⏳ Pendientes
-   - ❌ Fallidos (con reintentos automáticos)
-6. Al finalizar, click en **"Descargar Resultados"**
+   - ❌ Fallidos (con reintentos automáticos hasta 3 veces)
+   - Barra de progreso visual
+6. Al finalizar, el sistema muestra:
+   - 📄 **Formato automático**: CSV (>10k RUCs), Excel Optimizado (1k-10k), o Excel Estándar (<1k)
+   - 📥 **Botón de descarga** con el formato detectado
+7. Click en **"Descargar [Formato]"** para obtener archivo consolidado
+
+**Formatos de descarga:**
+- **CSV**: Para grandes volúmenes (>10,000 RUCs). Compatible con Excel, UTF-8 con BOM
+- **Excel Optimizado**: Para volúmenes medios (1,000-10,000 RUCs). Modo write-only, procesamiento por chunks
+- **Excel Estándar**: Para volúmenes pequeños (<1,000 RUCs). Con formato completo, colores y filtros
+
+**Nota**: El archivo siempre incluye 5 hojas/secciones:
+1. Resumen (estadísticas)
+2. Datos Consolidados (tabla maestra)
+3. Socios Detallados
+4. Representantes Detallados
+5. Órganos de Administración
 
 ### 2. Ver Resultados
 

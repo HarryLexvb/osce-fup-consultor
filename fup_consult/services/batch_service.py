@@ -18,6 +18,8 @@ from django.utils import timezone
 from fup_consult.models import BatchJob, BatchItem, BatchJobStatus, BatchItemStatus
 from fup_consult.services.fup_service import FUPService
 from fup_consult.exporters.excel_batch_exporter import ExcelBatchExporter
+from fup_consult.exporters.excel_batch_exporter_optimized import ExcelBatchExporterOptimized
+from fup_consult.exporters.csv_batch_exporter import CSVBatchExporter
 
 logger = logging.getLogger(__name__)
 
@@ -269,12 +271,18 @@ class BatchProcessingService:
                 logger.warning(f"Failed to process RUC {item.ruc}: {error_msg}")
                 await asyncio.to_thread(item.mark_failed, error_msg)
     
-    async def _generate_result_file(self, batch_job: BatchJob):
+    async def _generate_result_file(self, batch_job: BatchJob, format_type: str = 'auto'):
         """
-        Generate consolidated Excel file with all results.
+        Generate consolidated file with all results.
+        Supports CSV, Excel standard, and Excel optimized formats.
         
         Args:
             batch_job: BatchJob instance
+            format_type: 'auto', 'csv', 'excel', or 'excel_optimized'
+                        'auto' selects format based on dataset size:
+                        - >10k records: CSV
+                        - 1k-10k records: Excel optimized (write_only mode)
+                        - <1k records: Excel standard (full formatting)
         """
         try:
             # Get all completed items
@@ -292,27 +300,62 @@ class BatchProcessingService:
             
             # Extract result data
             results = [item.result_data for item in items if item.result_data]
+            num_results = len(results)
             
-            # Generate Excel
-            excel_bytes = await asyncio.to_thread(
-                self.excel_exporter.generate_batch_excel,
-                results,
-                batch_job.filename
-            )
+            logger.info(f"Generating result file for {num_results} records...")
+            
+            # Auto-detect format based on dataset size
+            if format_type == 'auto':
+                if num_results > 10000:
+                    format_type = 'csv'
+                    logger.info(f"Auto-selected CSV format for large dataset ({num_results} records)")
+                elif num_results > 1000:
+                    format_type = 'excel_optimized'
+                    logger.info(f"Auto-selected optimized Excel for medium dataset ({num_results} records)")
+                else:
+                    format_type = 'excel'
+                    logger.info(f"Auto-selected standard Excel for small dataset ({num_results} records)")
+            
+            # Generate file based on format
+            if format_type == 'csv':
+                exporter = CSVBatchExporter()
+                file_bytes = await asyncio.to_thread(
+                    exporter.generate_batch_csv,
+                    results,
+                    batch_job.filename
+                )
+                filename = f"batch_result_{batch_job.id}.csv"
+                extension = 'CSV'
+            elif format_type == 'excel_optimized':
+                exporter = ExcelBatchExporterOptimized()
+                file_bytes = await asyncio.to_thread(
+                    exporter.generate_batch_excel,
+                    results,
+                    batch_job.filename
+                )
+                filename = f"batch_result_{batch_job.id}.xlsx"
+                extension = 'Excel (Optimized)'
+            else:  # standard excel
+                file_bytes = await asyncio.to_thread(
+                    self.excel_exporter.generate_batch_excel,
+                    results,
+                    batch_job.filename
+                )
+                filename = f"batch_result_{batch_job.id}.xlsx"
+                extension = 'Excel'
             
             # Save to batch job
-            filename = f"batch_result_{batch_job.id}.xlsx"
             await asyncio.to_thread(
                 batch_job.result_file.save,
                 filename,
-                ContentFile(excel_bytes),
+                ContentFile(file_bytes),
                 save=True
             )
             
-            logger.info(f"Generated result file for batch {batch_job.id}")
+            logger.info(f"Generated {extension} result file for batch {batch_job.id} ({len(file_bytes):,} bytes)")
             
         except Exception as e:
-            logger.error(f"Error generating result file: {e}")
+            logger.error(f"Error generating result file: {e}", exc_info=True)
             raise
     
     async def get_batch_status(self, batch_job_id: str) -> dict:

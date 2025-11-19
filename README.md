@@ -145,15 +145,32 @@ python manage.py runserver
    - ⏳ RUCs pendientes de procesamiento
    - ❌ RUCs fallidos (con reintentos automáticos hasta 3 veces)
    - Barra de progreso visual
-5. **Descargar Excel consolidado** al finalizar con 5 hojas:
+5. **Descarga automática en el formato óptimo**:
 
-| Hoja | Contenido |
-|------|-----------|
-| `Resumen` | Estadísticas del batch: totales, estados, tipos de contribuyente |
-| `Datos Consolidados` | Todos los proveedores en una tabla con filtros |
-| `Socios Detallados` | Todos los socios de todas las empresas con RUC, nombre, % participación |
-| `Representantes Detallados` | Todos los representantes con RUC de empresa, nombre, cargo, fechas |
-| `Organos Administracion` | Todos los órganos con tipo, cargo, miembros |
+#### Formatos de Descarga (Automáticos según volumen)
+
+El sistema selecciona automáticamente el formato más eficiente según la cantidad de RUCs procesados:
+
+| Volumen | Formato | Características |
+|---------|---------|-----------------|
+| **< 1,000 RUCs** | 📑 **Excel Estándar** | Archivo .xlsx con formato completo, colores, filtros y 5 hojas |
+| **1,000 - 10,000 RUCs** | 📊 **Excel Optimizado** | Archivo .xlsx modo write-only, procesamiento por chunks de 5,000 registros |
+| **> 10,000 RUCs** | 📄 **CSV** | Archivo .csv UTF-8 con BOM, compatible con Excel, separadores por secciones |
+
+#### Contenido de las 5 Hojas/Secciones
+
+| Hoja/Sección | Contenido |
+|--------------|-----------|
+| `Resumen` | Estadísticas del batch: totales, estados, tipos de contribuyente top 15 |
+| `Datos Consolidados` | Todos los proveedores en tabla maestra con teléfonos, emails, contadores |
+| `Socios Detallados` | Todos los socios cross-company: RUC empresa, nombre, %, acciones, fechas |
+| `Representantes Detallados` | Todos los representantes: RUC empresa, nombre, cargo, tipo doc, fechas |
+| `Organos Administracion` | Todos los órganos: RUC empresa, tipo órgano, cargo, miembro, fechas |
+
+**Nota sobre CSV**: El formato CSV es compatible con Excel. Para abrirlo:
+- Doble clic (Excel abrirá automáticamente con codificación correcta)
+- O en Excel: Datos → Desde texto/CSV → seleccionar el archivo
+- Todas las secciones están separadas con encabezados `=== NOMBRE SECCION ===`
 
 ### Exportar a Excel (Individual)
 
@@ -178,12 +195,15 @@ En la página de resultados de consulta individual, hacer clic en **"Descargar E
 
 ### Características del Procesamiento Batch
 
-- ⚡ **Paralelismo**: Hasta 20 consultas simultáneas
-- 🔄 **Reintentos automáticos**: Hasta 3 intentos por RUC fallido
-- 📊 **Progreso en tiempo real**: Actualización cada 2 segundos
-- 💾 **Persistencia**: Los resultados se guardan en base de datos
-- 📥 **Descarga asíncrona**: El Excel se genera en segundo plano
-- ⏱️ **Rendimiento**: ~100-200 RUCs por minuto (depende de la API de OSCE)
+- ⚡ **Paralelismo**: Hasta 20 consultas simultáneas con semáforo de control
+- 🔄 **Reintentos automáticos**: Hasta 3 intentos por RUC fallido con delay incremental
+- 📊 **Progreso en tiempo real**: Polling cada 2 segundos con estadísticas detalladas
+- 💾 **Persistencia**: Resultados guardados en base de datos (SQLite/PostgreSQL)
+- 📥 **Formato automático**: CSV para >10k, Excel optimizado para 1k-10k, Excel estándar <1k
+- 🚀 **Optimizado para grandes volúmenes**: Write-only mode y procesamiento por chunks
+- ⏱️ **Rendimiento**: ~100-200 RUCs por minuto (limitado por API de OSCE)
+- 🛡️ **Manejo robusto de errores**: Logging detallado y recuperación automática
+- 📦 **Sin pérdida de datos**: Resultados guardados incrementalmente durante procesamiento
 
 ## 📁 Estructura del Proyecto
 
@@ -192,18 +212,24 @@ osce-fup-consultor/
 │
 ├── 📂 fup_consult/              # Aplicación Django principal
 │   ├── __init__.py
-│   ├── models.py                # Modelos de dominio (dataclasses)
+│   ├── models.py                # Modelos BatchJob, BatchItem para procesamiento
 │   ├── forms.py                 # Validación de formularios
-│   ├── views.py                 # Vistas HTTP
+│   ├── views.py                 # Vistas HTTP (individual + batch)
 │   ├── urls.py                  # Rutas de la app
+│   ├── admin.py                 # Admin de Django para BatchJob
 │   │
 │   ├── 📂 services/             # Capa de servicios (lógica de negocio)
 │   │   ├── __init__.py
-│   │   ├── osce_client.py       # Cliente API OSCE
-│   │   └── fup_service.py       # Agregación y normalización
+│   │   ├── osce_client.py       # Cliente API OSCE (async con httpx)
+│   │   ├── fup_service.py       # Agregación y normalización de datos
+│   │   └── batch_service.py     # Procesamiento batch con paralelismo
 │   │
 │   ├── 📂 exporters/            # Exportadores de datos
 │   │   ├── __init__.py
+│   │   ├── excel_exporter.py             # Exportador Excel individual
+│   │   ├── excel_batch_exporter.py       # Exportador Excel batch estándar
+│   │   ├── excel_batch_exporter_optimized.py  # Excel optimizado (write-only)
+│   │   └── csv_batch_exporter.py         # Exportador CSV para grandes volúmenes
 │   │   └── excel_exporter.py    # Generación de archivos Excel
 │   │
 │   ├── 📂 templates/            # Plantillas HTML

@@ -50,7 +50,8 @@ class ExcelBatchExporter:
     def generate_batch_excel(
         self,
         results: List[Dict[str, Any]],
-        original_filename: str
+        original_filename: str,
+        optimized: bool = False
     ) -> bytes:
         """
         Generate consolidated Excel file from batch results.
@@ -58,10 +59,27 @@ class ExcelBatchExporter:
         Args:
             results: List of provider data dictionaries
             original_filename: Original input filename for reference
+            optimized: If True, uses write_only mode for large datasets (10k+ records)
         
         Returns:
             Excel file as bytes
         """
+        # Auto-detect if should use optimized mode
+        if len(results) > 10000:
+            optimized = True
+            logger.info(f"Large dataset detected ({len(results)} records). Using optimized mode.")
+        
+        if optimized:
+            return self._generate_optimized_excel(results, original_filename)
+        else:
+            return self._generate_standard_excel(results, original_filename)
+    
+    def _generate_standard_excel(
+        self,
+        results: List[Dict[str, Any]],
+        original_filename: str
+    ) -> bytes:
+        """Generate standard Excel with full formatting (for < 10k records)."""
         wb = Workbook()
         
         # Remove default sheet
@@ -78,6 +96,34 @@ class ExcelBatchExporter:
         self._create_socios_detail_sheet(wb, results)
         self._create_representantes_detail_sheet(wb, results)
         self._create_organos_detail_sheet(wb, results)
+        
+        # Save to bytes
+        excel_file = io.BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+        
+        return excel_file.read()
+    
+    def _generate_optimized_excel(
+        self,
+        results: List[Dict[str, Any]],
+        original_filename: str
+    ) -> bytes:
+        """Generate optimized Excel using write_only mode for large datasets."""
+        from openpyxl import Workbook as OptimizedWorkbook
+        
+        wb = OptimizedWorkbook(write_only=True)
+        
+        # Create summary sheet
+        self._create_optimized_summary_sheet(wb, results, original_filename)
+        
+        # Create consolidated data sheet
+        self._create_optimized_consolidated_sheet(wb, results)
+        
+        # Create detailed sheets
+        self._create_optimized_socios_sheet(wb, results)
+        self._create_optimized_representantes_sheet(wb, results)
+        self._create_optimized_organos_sheet(wb, results)
         
         # Save to bytes
         excel_file = io.BytesIO()
